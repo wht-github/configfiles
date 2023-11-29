@@ -2,6 +2,10 @@
 oh-my-posh init pwsh --config "~/.my_posh_theme.omp.json" | Invoke-Expression
 Import-Module posh-git # 引入 posh-git
 $env:POSH_GIT_ENABLED = $true
+function wt_admin {
+    Start-Process wt "-d $(Get-Location)" -Verb RunAs
+}
+Set-Alias -Name "wt-admin" -Value wt_admin
 # function Set-PoshGitStatus {
 #     $global:GitStatus = Get-GitStatus
 #     $env:POSH_GIT_STRING = $(Write-GitStatus -Status $global:GitStatus).Trim()
