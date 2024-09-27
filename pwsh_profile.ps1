@@ -13,4 +13,7 @@ function vsdevshell {
 Set-Alias -Name "ls" -Value lsd
 Set-Alias -Name "wt-admin" -Value Start-Admin
 Set-Alias -Name "refreshenv" -Value Update-Env
+function Get-Full-History {Get-Content (Get-PSReadlineOption).HistorySavePath}
+Set-Alias -Name "history" -Value Get-Full-History
+Set-Alias -Name "h" -Value Get-Full-History
 Invoke-Expression (& { (zoxide init powershell | Out-String) })
