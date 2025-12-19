@@ -15,6 +15,8 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="deepseek-reasoner" # Default Sonnet model
 export ANTHROPIC_DEFAULT_OPUS_MODEL="deepseek-reasoner"     # Default Opus model alias
 export ANTHROPIC_DEFAULT_OPUS_MODEL="deepseek-reasoner"     # Default Opus model alias
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="deepseek-chat"
+export TERM=xterm-256color
+export COLORTERM=truecolor
 # Check if DEEPSEEK_API_KEY is set
 if [ -z "$DEEPSEEK_API_KEY" ]; then
     echo "Error: DEEPSEEK_API_KEY environment variable is not set"
