@@ -33,11 +33,5 @@ RUN curl -L https://raw.githubusercontent.com/xwmx/nb/master/nb -o /usr/local/bi
 # Set up notes directory
 WORKDIR /notes
 
-# Explicitly set NB_DIR to make it clear where notes are stored
-ENV NB_DIR=/notes
-
-# Pre-configure .nbrc to allow external access
-RUN echo "NB_SERVER_HOST=0.0.0.0" > /root/.nbrc
-RUN echo "NB_SERVER_PORT=6789" >> /root/.nbrc
 
 ENTRYPOINT ["/bin/bash"]
