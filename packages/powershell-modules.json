@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "name": "Pester",
+      "scope": "CurrentUser",
+      "required": false,
+      "purpose": "Optional PowerShell test tooling"
+    }
+  ]
+}

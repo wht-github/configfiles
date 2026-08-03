@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "GitPredictor",
+  "repository": "https://github.com/wht-github/GitPredictor.git",
+  "required": true,
+  "minimumPowerShellVersion": "7.2",
+  "targetFramework": "net9.0",
+  "buildCommand": "just pack-release",
+  "moduleSource": "module/GitPredictor",
+  "installRoot": "%USERPROFILE%/Documents/PowerShell/Modules/GitPredictor",
+  "profileContract": {
+    "promptFunction": "Get-GitSimplePrompt",
+    "completion": "Register-ArgumentCompleter -Native for git and git.exe"
+  }
+}

@@ -1,0 +1,30 @@
+# Machine-local PowerShell settings
+pwsh/local.ps1
+
+# PowerShell history and transient caches
+*.history.txt
+PSReadLine/
+
+# Local tool/package state
+.venv/
+.uv/
+.cargo/
+
+# Build and editor output
+bin/
+obj/
+.vs/
+.vscode/
+
+# Agent/session backups must stay with the project that created them
+.codex-backup-*/
+.zellij-backup-*/
+
+# Secrets and local credentials
+*.local.json
+*.local.yaml
+*.local.yml
+*.secret.ps1
+*.key
+*.pem
+*.pfx

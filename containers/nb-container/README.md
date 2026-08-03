@@ -1,37 +1,47 @@
-# nb container
+# nb 容器
 
-This setup allows you to use [nb](https://github.com/xwmx/nb) (a command-line note-taking tool) via Docker, with notes stored on your Windows host.
+这个配置通过 Docker 使用 [nb](https://github.com/xwmx/nb) 命令行笔记工具，笔记
+文件保存在 Windows 主机上。
 
-## Prerequisites
+## 前置条件
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+- 已安装并运行 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。
 
-## Usage
+## 使用方法
 
-### 1. Build the image
+### 1. 构建镜像
+
 ```powershell
 docker compose build
 ```
 
-### 2. Run nb
-You can run `nb` commands using docker compose:
+### 2. 运行 nb
+
+可以通过 Docker Compose 执行 `nb` 命令：
+
 ```powershell
 docker compose run --rm nb help
 ```
 
-### 3. Create a note
+### 3. 创建笔记
+
 ```powershell
 docker compose run --rm nb add "Hello from Windows"
 ```
 
-## Note Storage
-Your notes and configuration are stored in the `./notes` directory within this folder, which is mounted to `/root/.nb` inside the container. 
+## 笔记存储
 
-- **Global Availability**: Since it's mounted to the default `~/.nb` location, `nb` will recognize these notes regardless of the working directory.
-- **Windows Access**: You can edit the markdown files directly from Windows (e.g., in `notes/home/`) using VS Code.
+笔记和配置存储在当前目录下的 `./notes` 中，该目录会挂载到容器内的 `/root/.nb`。
 
-## Tips
-If you want to use `nb` more easily, you can add an alias or a function to your PowerShell profile:
+- **全局可用**：由于挂载到了默认的 `~/.nb` 位置，`nb` 无论当前工作目录在哪里，
+  都可以识别这些笔记。
+- **Windows 访问**：可以直接在 Windows 中使用 VS Code 编辑 Markdown 文件，例如
+  `notes/home/` 下的文件。
+
+## 使用提示
+
+如果希望更方便地使用 `nb`，可以在 PowerShell profile 中添加 alias 或函数：
+
 ```powershell
 function nb { docker compose -f "D:\Workspace\configfiles\containers\nb-container\docker-compose.yml" run --rm nb $args }
 ```

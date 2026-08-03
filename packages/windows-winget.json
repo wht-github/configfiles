@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "source": "winget",
+  "policy": "latest-compatible",
+  "packages": [
+    {
+      "id": "Microsoft.PowerShell",
+      "purpose": "PowerShell 7 runtime",
+      "required": true
+    },
+    {
+      "id": "Git.Git",
+      "purpose": "Git",
+      "required": true
+    },
+    {
+      "id": "Microsoft.DotNet.SDK.10",
+      "purpose": "Build GitPredictor and .NET projects",
+      "required": true
+    },
+    {
+      "id": "junegunn.fzf",
+      "purpose": "Fuzzy finder",
+      "required": true
+    },
+    {
+      "id": "BurntSushi.ripgrep.MSVC",
+      "purpose": "Fast recursive text search (rg)",
+      "required": true
+    },
+    {
+      "id": "sharkdp.bat",
+      "purpose": "Readable file viewer",
+      "required": true
+    },
+    {
+      "id": "sharkdp.fd",
+      "purpose": "Fast file finder",
+      "required": true
+    },
+    {
+      "id": "ajeetdsouza.zoxide",
+      "purpose": "Directory jumper",
+      "required": true
+    },
+    {
+      "id": "lsd-rs.lsd",
+      "purpose": "Directory listing",
+      "required": true
+    },
+    {
+      "id": "Casey.Just",
+      "purpose": "Task runner used by GitPredictor",
+      "required": true
+    },
+    {
+      "id": "astral-sh.uv",
+      "purpose": "Python tool and environment manager",
+      "required": true
+    },
+    {
+      "id": "Zellij.Zellij",
+      "purpose": "Terminal multiplexer",
+      "required": true
+    },
+    {
+      "id": "Microsoft.WindowsTerminal",
+      "purpose": "Terminal host used by wt-admin",
+      "required": true
+    },
+    {
+      "id": "Rustlang.Rustup",
+      "purpose": "Rust toolchain for Rust development",
+      "required": false
+    },
+    {
+      "id": "RedHat.Podman",
+      "purpose": "Container runtime for existing container workflows",
+      "required": false
+    }
+  ]
+}
