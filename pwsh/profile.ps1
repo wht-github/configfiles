@@ -13,6 +13,14 @@ if (Test-Path -LiteralPath $localSettingsPath) {
     . $localSettingsPath
 }
 
+# Authentication values are kept separately from ordinary machine settings.
+# This file is ignored by Git and is loaded in every session so CLI tools and
+# agent/container commands can read the same environment variables.
+$secretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
+if (Test-Path -LiteralPath $secretsPath) {
+    . $secretsPath
+}
+
 if ($script:IsInteractive -and $env:ZELLIJ_SESSION_NAME) {
     $zellijThemePath = Join-Path $PSScriptRoot 'zellij-solarized-console.ps1'
     if (Test-Path -LiteralPath $zellijThemePath) {

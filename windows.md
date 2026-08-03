@@ -141,4 +141,24 @@ git commit -<Tab>
 ## 本地覆盖配置
 
 只在需要配置机器专用值时，复制 `pwsh/local.example.ps1` 为 `pwsh/local.ps1`。
-该文件已被 Git 忽略。密钥应保存在环境变量或凭据管理器中，不要放入本仓库。
+该文件已被 Git 忽略。
+
+## Auth Token 和环境变量
+
+需要为 CLI 工具、agent 或容器提供认证信息时，复制：
+
+```powershell
+Copy-Item .\pwsh\secrets.example.ps1 .\pwsh\secrets.local.ps1
+```
+
+将实际的环境变量写入 `pwsh/secrets.local.ps1`。profile 每次启动时会自动加载该
+文件，例如：
+
+```powershell
+$env:DEEPSEEK_API_KEY = 'your-token'
+$env:ANTHROPIC_AUTH_TOKEN = $env:DEEPSEEK_API_KEY
+```
+
+`pwsh/secrets.local.ps1` 已被 Git 忽略，绝不能提交。对于重要 token，优先使用
+Windows 用户环境变量、Windows Credential Manager 或 PowerShell SecretManagement；
+本地 secrets 文件是明文存储，只适合风险可接受的个人机器。

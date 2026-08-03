@@ -1,5 +1,6 @@
 # Machine-local PowerShell settings
 pwsh/local.ps1
+pwsh/secrets.local.ps1
 
 # PowerShell history and transient caches
 *.history.txt
