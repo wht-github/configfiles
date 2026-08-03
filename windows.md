@@ -63,25 +63,18 @@ fzf, rg, bat, fd, zoxide, lsd, just, uv, zellij
 不要导入 `posh-git`。`pwsh/profile.ps1` 使用 `-ErrorAction Stop` 导入 GitPredictor；
 如果必需模块缺失，会明确失败。
 
-## 4. 构建并安装 GitPredictor
+## 4. 从 GitHub Release 安装 GitPredictor
 
-如果本机已有 GitPredictor checkout，直接使用它；否则将
-`packages/gitpredictor.json` 中声明的仓库克隆到当前仓库旁边，或放到
-`$HOME/src/GitPredictor`。
+安装 `packages/gitpredictor.json` 锁定的公开 GitHub Release。安装脚本会匿名下载
+zip、验证 SHA-256、模块版本及 MIT License，再安装到版本化的用户模块目录；不需要
+GitHub 凭据、GitPredictor checkout 或本地 .NET 构建环境。
 
 ```powershell
-Set-Location '<GitPredictor checkout>'
-just pack-release
-$moduleRoot = Join-Path $HOME 'Documents\PowerShell\Modules\GitPredictor\0.1.0'
-New-Item -ItemType Directory -Force -Path $moduleRoot | Out-Null
-Copy-Item -Recurse -Force -Path '.\module\GitPredictor\*' -Destination $moduleRoot
+pwsh -NoLogo -NoProfile -File .\packages\Install-GitPredictor.ps1
 ```
 
-模块目录必须包含 `GitPredictor.psd1`、`GitPredictor.dll`、`GitPrompt.psm1` 和
-`Register-GitTabCompletion.ps1`。
-
-如果开发 checkout 尚未安装到用户模块目录，将 `GITPREDICTOR_MODULE_PATH` 设置为
-`<checkout>\module\GitPredictor`。
+模块目录必须包含 `GitPredictor.psd1`、`GitPredictor.dll`、`GitPrompt.psm1`、
+`Register-GitTabCompletion.ps1` 和 `LICENSE`。
 
 ## 5. Visual Studio DevShell
 

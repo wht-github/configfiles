@@ -1,12 +1,17 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "GitPredictor",
-  "repository": "https://github.com/wht-github/GitPredictor.git",
+  "projectUrl": "https://github.com/wht-github/GitPredictor",
   "required": true,
   "minimumPowerShellVersion": "7.2",
-  "targetFramework": "net9.0",
-  "buildCommand": "just pack-release",
-  "moduleSource": "module/GitPredictor",
+  "release": {
+    "version": "0.1.1",
+    "tag": "v0.1.1",
+    "asset": "GitPredictor-0.1.1.zip",
+    "downloadUrl": "https://github.com/wht-github/GitPredictor/releases/download/v0.1.1/GitPredictor-0.1.1.zip",
+    "sha256": "46C324A7F8A7259DED254622B4787F1CC6D99EE1AEDCFCAA7508FA24658AFC00"
+  },
+  "installScript": "packages/Install-GitPredictor.ps1",
   "installRoot": "%USERPROFILE%/Documents/PowerShell/Modules/GitPredictor",
   "profileContract": {
     "promptFunction": "Get-GitSimplePrompt",

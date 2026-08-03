@@ -37,44 +37,20 @@ if (-not $env:RUSTUP_DIST_SERVER) {
 $env:BAT_THEME = 'Solarized (light)'
 
 function Resolve-GitPredictorManifest {
-    $candidateManifests = @()
+    $packagePath = Join-Path $script:DevConfigRoot 'packages\gitpredictor.json'
+    $package = Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json
+    $installer = Join-Path $script:DevConfigRoot ([string]$package.installScript)
+    $installRoot = [Environment]::ExpandEnvironmentVariables([string]$package.installRoot)
+    $manifest = Join-Path $installRoot "$($package.release.version)\GitPredictor.psd1"
 
-    if ($env:GITPREDICTOR_MODULE_PATH) {
-        $candidateManifests += Join-Path $env:GITPREDICTOR_MODULE_PATH 'GitPredictor.psd1'
-    }
-
-    if ($env:GITPREDICTOR_ROOT) {
-        $candidateManifests += Join-Path $env:GITPREDICTOR_ROOT 'module\GitPredictor\GitPredictor.psd1'
-    }
-
-    # Keeping the two repositories side by side works on every drive and does
-    # not encode D:\Workspace into the profile.
-    $siblingGitPredictor = Join-Path (Split-Path -Parent $script:DevConfigRoot) 'GitPredictor'
-    $candidateManifests += Join-Path $siblingGitPredictor 'module\GitPredictor\GitPredictor.psd1'
-
-    $candidateManifests += @(
-        Join-Path $HOME 'src\GitPredictor\module\GitPredictor\GitPredictor.psd1',
-        Join-Path $HOME 'Documents\PowerShell\Modules\GitPredictor\GitPredictor.psd1'
-    )
-
-    foreach ($manifest in ($candidateManifests | Where-Object { $_ } | Select-Object -Unique)) {
-        if (Test-Path -LiteralPath $manifest) {
-            return (Resolve-Path -LiteralPath $manifest).ProviderPath
-        }
-    }
-
-    $available = @(
-        Get-Module -ListAvailable -Name GitPredictor -ErrorAction SilentlyContinue |
-            Sort-Object Version -Descending |
-            Select-Object -First 1
-    )
-    if ($available) {
-        return $available.Path
+    if (Test-Path -LiteralPath $manifest -PathType Leaf) {
+        return (Resolve-Path -LiteralPath $manifest).ProviderPath
     }
 
     throw @"
-GitPredictor is required by this profile but was not found.
-Build/install it by following windows.md, or set GITPREDICTOR_MODULE_PATH to its module directory.
+GitPredictor $($package.release.version) is required by this profile but was not found at:
+$manifest
+Install the verified GitHub Release by running: pwsh -File "$installer"
 The profile intentionally does not load posh-git as a fallback.
 "@
 }

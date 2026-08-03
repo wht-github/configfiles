@@ -1,7 +1,5 @@
 [CmdletBinding()]
-param(
-    [string]$GitPredictorModulePath
-)
+param()
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -11,8 +9,11 @@ if (-not (Test-Path -LiteralPath $profilePath)) {
     throw "Profile not found: $profilePath"
 }
 
-if ($GitPredictorModulePath) {
-    $env:GITPREDICTOR_MODULE_PATH = $GitPredictorModulePath
+$profileSource = Get-Content -LiteralPath $profilePath -Raw
+foreach ($developmentSetting in @('GITPREDICTOR_MODULE_PATH', 'GITPREDICTOR_ROOT', 'siblingGitPredictor')) {
+    if ($profileSource.Contains($developmentSetting)) {
+        throw "Profile still contains GitPredictor development configuration: $developmentSetting"
+    }
 }
 
 . $profilePath
