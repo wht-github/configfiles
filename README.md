@@ -20,3 +20,5 @@ Codex 的 DeepSeek profile（Windows / Linux 通用）由
 
 机器专用的配置应放在 `pwsh/local.ps1` 中，该文件已被 Git 忽略。如果某台机器需要
 本地覆盖配置，可以从 `pwsh/local.example.ps1` 开始创建。
+
+Linux（bash）环境配置由 [linux/](linux/README.md) 维护，部署到 `~/.bashrc.d/`。
