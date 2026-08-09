@@ -1,0 +1,8 @@
+# Copy to alacritty.local.toml for machine-specific overrides.
+# This file is intentionally ignored by Git.
+#
+# Alacritty does not expand "~" or environment variables in
+# working_directory, so the absolute path must be written per machine.
+
+[general]
+# working_directory = "C:\\Users\\VICO"

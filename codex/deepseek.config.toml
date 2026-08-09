@@ -1,0 +1,28 @@
+# Codex DeepSeek profile（Windows / Linux 通用）
+#
+# 安装：复制到 ~/.codex/deepseek.config.toml
+# 使用：codex --profile deepseek
+#
+# 本文件只保留可移植配置。机器专用的 [projects] trust 条目、API key
+# 等不要写入，留在各机器的用户级配置中。
+
+model = "deepseek-v4-flash"
+model_provider = "deepseek"
+preferred_auth_method = "apikey"
+# forced_login_method = "api"
+model_reasoning_effort = "max"
+model_catalog_json = "~/.codex/models.json"
+approvals_reviewer = "auto_review"
+
+[model_providers.deepseek]
+name = "deepseek"
+base_url = "https://api.deepseek.com/"
+wire_api = "responses"
+env_key = "DEEPSEEK_API_KEY"
+env_key_instructions = "Set DEEPSEEK_API_KEY before starting Codex"
+
+[features]
+network_proxy = true
+
+[tui]
+theme = "solarized-light"
