@@ -10,10 +10,6 @@ Windows 环境的部署流程记录在 [windows.md](windows.md) 中。文档会�
 profile 会直接使用 GitPredictor，不会加载或 fallback 到 posh-git。如果没有安装
 GitPredictor，profile 会报告所需的安装位置并停止加载。
 
-Alacritty 终端配置（默认 pwsh + Solarized Light）由
-[alacritty/alacritty.toml](alacritty/alacritty.toml) 维护，部署方式见
-[windows.md](windows.md)。
-
 Codex 的 DeepSeek profile（Windows / Linux 通用）由
 [codex/](codex/README.md) 维护，安装与使用方式见
 [codex/README.md](codex/README.md)。

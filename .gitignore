@@ -1,9 +1,6 @@
 # Machine-local PowerShell settings
 pwsh/local.ps1
 
-# Machine-local Alacritty overrides
-alacritty/alacritty.local.toml
-
 # PowerShell history and transient caches
 *.history.txt
 PSReadLine/

@@ -111,40 +111,7 @@ vsdevshell -InstallationPath 'C:\Program Files\Microsoft Visual Studio\18\Commun
 选中的 `Launch-VsDevShell.ps1` 会使用 dot-source 执行，使环境变量变更保留在当前
 PowerShell 进程中。
 
-## 6. Alacritty
-
-本机已安装 Alacritty（0.17+），但 Alacritty 不列入 `packages/windows-winget.json`
-清单；新机器需要时单独安装：
-
-```powershell
-winget install --id Alacritty.Alacritty --exact --source winget
-```
-
-仓库维护的配置在 `alacritty/alacritty.toml`，按 Alacritty 0.17+ 的 TOML 格式编写，
-默认 shell 为 pwsh，使用 Solarized Light 主题。Windows 上 Alacritty 从
-`%APPDATA%\alacritty\alacritty.toml` 读取配置。机器专用的覆盖值（例如
-`working_directory`）写在 `alacritty/alacritty.local.toml`，该文件已被 Git 忽略，
-新机器可以从 `alacritty.local.example.toml` 复制创建。部署前先备份已有文件，再
-复制两个文件：
-
-```powershell
-$alacrittyDir = "$env:APPDATA\alacritty"
-$stamp = Get-Date -Format yyyyMMdd-HHmmss
-foreach ($name in @('alacritty.toml', 'alacritty.local.toml')) {
-    $source = Join-Path .\alacritty $name
-    if (-not (Test-Path -LiteralPath $source)) { continue }
-    $dest = Join-Path $alacrittyDir $name
-    if (Test-Path -LiteralPath $dest) {
-        Copy-Item -LiteralPath $dest "$dest.bak-$stamp"
-    }
-    Copy-Item -LiteralPath $source -Destination $dest -Force
-}
-```
-
-配置开启了 live config reload，已运行的 Alacritty 会读取最新配置；修改仓库配置后
-重新执行上面的复制命令即可生效。
-
-## 7. 验证
+## 6. 验证
 
 打开新的 PowerShell 会话并验证：
 
