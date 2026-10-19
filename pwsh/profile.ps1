@@ -80,25 +80,48 @@ if (-not (Get-Command Get-GitSimplePrompt -ErrorAction SilentlyContinue)) {
 }
 Trace-ProfileMark 'gitpredictor'
 
+# Single source of truth for the Solarized Light palette. Everything in this
+# profile derives its colors from this table (PSReadLine tokens, the prompt),
+# and the terminal-side layers use the same palette:
+#   - Windows Terminal: built-in "Solarized Light" scheme (see windows.md)
+#   - bat: BAT_THEME = 'Solarized (light)'
+#   - zellij panes: pwsh/zellij-solarized-console.ps1 (ConPTY color table)
+$script:Theme = @{
+    Base00  = '#657B83'
+    Base01  = '#586E75'
+    Base02  = '#93A1A1'
+    Dark    = '#073642'
+    LightBg = '#EEE8D5'
+    Yellow  = '#B58900'
+    Orange  = '#CB4B16'
+    Red     = '#DC322F'
+    Magenta = '#D33682'
+    Violet  = '#6C71C4'
+    Blue    = '#268BD2'
+    Cyan    = '#2AA198'
+    Green   = '#859900'
+}
+
+# PSReadLine token colors, derived from the shared palette.
 $ISETheme = @{
-    Command                  = '#268BD2'
-    Comment                  = '#859900'
-    ContinuationPrompt       = '#268BD2'
-    Default                  = '#073642'
-    Emphasis                 = '#2AA198'
-    Error                    = '#DC322F'
-    InlinePrediction         = '#93A1A1'
-    Keyword                  = '#859900'
-    ListPrediction           = '#B58900'
-    Member                   = '#586E75'
-    Number                   = '#6C71C4'
-    Operator                 = '#657B83'
-    Parameter                = '#268BD2'
-    String                   = '#2AA198'
-    Type                     = '#CB4B16'
-    Variable                 = '#D33682'
-    ListPredictionSelected   = '#073642'
-    Selection                = '#93A1A1'
+    Command                  = $script:Theme.Blue
+    Comment                  = $script:Theme.Green
+    ContinuationPrompt       = $script:Theme.Blue
+    Default                  = $script:Theme.Dark
+    Emphasis                 = $script:Theme.Cyan
+    Error                    = $script:Theme.Red
+    InlinePrediction         = $script:Theme.Base02
+    Keyword                  = $script:Theme.Green
+    ListPrediction           = $script:Theme.Yellow
+    Member                   = $script:Theme.Base01
+    Number                   = $script:Theme.Violet
+    Operator                 = $script:Theme.Base00
+    Parameter                = $script:Theme.Blue
+    String                   = $script:Theme.Cyan
+    Type                     = $script:Theme.Orange
+    Variable                 = $script:Theme.Magenta
+    ListPredictionSelected   = $script:Theme.Dark
+    Selection                = $script:Theme.Base02
 }
 
 function Show-ISEThemeColors {
@@ -259,9 +282,9 @@ function prompt {
     $lastNative = $global:LASTEXITCODE
     $lastPsOk = $?
 
-    $fgPath = $PSStyle.Foreground.FromRGB('#268BD2')
+    $fgPath = $PSStyle.Foreground.FromRGB($script:Theme.Blue)
     $fgIcon = $PSStyle.Foreground.BrightBlue
-    $fgTime = $PSStyle.Foreground.FromRGB('#586E75')
+    $fgTime = $PSStyle.Foreground.FromRGB($script:Theme.Base01)
     $fgOk = $PSStyle.Foreground.BrightGreen
     $fgErr = $PSStyle.Foreground.BrightRed
     $reset = $PSStyle.Reset
@@ -272,7 +295,9 @@ function prompt {
 
     Write-Host "$fgIcon$icon $fgPath$path$reset" -NoNewline
     $saved = $global:LASTEXITCODE
-    $gitStatus = Get-GitSimplePrompt
+    # -Color: the module colors branch/untracked/conflict/stash with ANSI
+    # codes, which the terminal's Solarized Light table renders consistently.
+    $gitStatus = Get-GitSimplePrompt -Color
     $global:LASTEXITCODE = $saved
     Write-Host "$gitStatus $fgTime$time$reset"
 

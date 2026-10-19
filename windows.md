@@ -111,7 +111,19 @@ vsdevshell -InstallationPath 'C:\Program Files\Microsoft Visual Studio\18\Commun
 选中的 `Launch-VsDevShell.ps1` 会使用 dot-source 执行，使环境变量变更保留在当前
 PowerShell 进程中。
 
-## 6. 验证
+## 6. Windows Terminal
+
+Windows Terminal 是主终端。其 settings.json 不由仓库维护，但部署新机器时按以下
+契约设置（设置 -> 默认值 -> 外观，或直接编辑 settings.json）：
+
+- 应用主题 `theme`：`light`
+- 配色方案 `colorScheme`：内置 `Solarized Light`
+
+这与 profile 调色板（`pwsh/profile.ps1` 的 `$Theme`）、bat 主题
+（`Solarized (light)`）和 zellij 面板色表（`pwsh/zellij-solarized-console.ps1`）
+保持同一套 Solarized Light 色板。
+
+## 7. 验证
 
 打开新的 PowerShell 会话并验证：
 
