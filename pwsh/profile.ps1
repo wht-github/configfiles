@@ -121,36 +121,6 @@ function Show-ISEThemeColors {
 function Set-LightThemeColors {
     if (-not $script:IsInteractive) { return }
     Set-PSReadLineOption -Colors $ISETheme
-    Write-Host 'Light theme colors applied!' -ForegroundColor Green
-}
-
-function Set-HighContrastLightTheme {
-    if ($Host.UI.RawUI) {
-        $Host.UI.RawUI.BackgroundColor = 'White'
-        $Host.UI.RawUI.ForegroundColor = 'Black'
-    }
-    Set-PSReadLineOption -Colors @{
-        Command                  = '#00008B'
-        Comment                  = '#006400'
-        ContinuationPrompt       = '#00008B'
-        Default                  = '#000000'
-        Emphasis                 = '#008080'
-        Error                    = '#FF0000'
-        InlinePrediction         = '#696969'
-        Keyword                  = '#800080'
-        ListPrediction           = '#B8860B'
-        Member                   = '#000000'
-        Number                   = '#000000'
-        Operator                 = '#000000'
-        Parameter                = '#000080'
-        String                   = '#8B0000'
-        Type                     = '#008080'
-        Variable                 = '#A52A2A'
-        ListPredictionSelected   = '#000000'
-        Selection                = '#ADD8E6'
-    }
-    Clear-Host
-    Write-Host 'High Contrast Light Theme applied!' -ForegroundColor Green
 }
 
 if ($script:IsInteractive) {
@@ -160,7 +130,9 @@ if ($script:IsInteractive) {
 
     $psrl = Get-Module PSReadLine
     if ($psrl -and $psrl.Version -ge [version]'2.2.0') {
-        Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+        # History only: GitPredictor 0.2.0 dropped its PSReadLine predictor
+        # plugin, so the Plugin source has nothing left to consume.
+        Set-PSReadLineOption -PredictionSource History
         Set-PSReadLineOption -PredictionViewStyle ListView
     }
 }
