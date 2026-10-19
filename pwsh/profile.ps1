@@ -6,6 +6,22 @@ $script:IsInteractive = $Host.Name -eq 'ConsoleHost' -and
     -not [Console]::IsInputRedirected -and
     -not [Console]::IsOutputRedirected
 
+# Optional per-section load timing: set PROFILE_TRACE to a report file path in
+# a fresh session to append a section breakdown (zero cost when unset).
+$script:TraceEnabled = -not [string]::IsNullOrWhiteSpace($env:PROFILE_TRACE)
+$script:TraceMarks = [System.Collections.Generic.List[object]]::new()
+$script:TraceSw = [System.Diagnostics.Stopwatch]::StartNew()
+function Trace-ProfileMark {
+    param([Parameter(Mandatory)][string]$Label)
+    if (-not $script:TraceEnabled) { return }
+    $script:TraceSw.Stop()
+    $script:TraceMarks.Add([pscustomobject]@{
+        Label = $Label
+        Ms    = [math]::Round($script:TraceSw.Elapsed.TotalMilliseconds, 1)
+    })
+    $script:TraceSw.Restart()
+}
+
 # Machine-local settings are loaded first so the tracked defaults below can be
 # overridden without putting machine paths or credentials in Git.
 $localSettingsPath = Join-Path $PSScriptRoot 'local.ps1'
@@ -27,6 +43,7 @@ if (-not $env:RUSTUP_DIST_SERVER) {
     $env:RUSTUP_DIST_SERVER = 'https://mirrors.tuna.tsinghua.edu.cn/rustup'
 }
 $env:BAT_THEME = 'Solarized (light)'
+Trace-ProfileMark 'local+zellij+env'
 
 function Resolve-GitPredictorManifest {
     $packagePath = Join-Path $script:DevConfigRoot 'packages\gitpredictor.json'
@@ -61,6 +78,7 @@ Import-Module $gitPredictorManifest -Force -ErrorAction Stop
 if (-not (Get-Command Get-GitSimplePrompt -ErrorAction SilentlyContinue)) {
     throw 'GitPredictor loaded without Get-GitSimplePrompt; the installed module is incomplete.'
 }
+Trace-ProfileMark 'gitpredictor'
 
 $ISETheme = @{
     Command                  = '#268BD2'
@@ -146,6 +164,7 @@ if ($script:IsInteractive) {
         Set-PSReadLineOption -PredictionViewStyle ListView
     }
 }
+Trace-ProfileMark 'functions+psreadline'
 
 function Start-Admin {
     if (-not (Get-Command wt.exe -ErrorAction SilentlyContinue)) {
@@ -312,10 +331,92 @@ function Get-Full-History {
 Set-Alias -Name 'history' -Value Get-Full-History
 Set-Alias -Name 'h' -Value Get-Full-History
 
-if ($script:IsInteractive -and (Get-Command zoxide -ErrorAction SilentlyContinue)) {
-    Invoke-Expression (& { (zoxide init powershell | Out-String) })
+# Shell integration scripts emitted by external tools (zoxide init, jj
+# completion) are cached on disk, keyed by the owning executable's last-write
+# time. Dot-sourcing the cache avoids spawning the tool and regenerating its
+# script in every session; a tool upgrade rewrites the executable and
+# invalidates the key automatically.
+$script:InitCacheRoot = Join-Path $env:LOCALAPPDATA ('devconfig' + [IO.Path]::DirectorySeparatorChar + 'shell-init')
+
+function Get-ShellInitCachePath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][string]$ToolPath,
+        [Parameter(Mandatory)][scriptblock]$Generator
+    )
+
+    # Rust tools (zoxide, jj) ship no version resources, so the file's
+    # modification time is the cheapest reliable key.
+    $toolVersion = [System.IO.File]::GetLastWriteTimeUtc($ToolPath).Ticks.ToString()
+    $safeVersion = $toolVersion -replace '[^A-Za-z0-9._-]', '_'
+    $cachePath = Join-Path $script:InitCacheRoot "$Name.$safeVersion.ps1"
+    if (Test-Path -LiteralPath $cachePath -PathType Leaf) {
+        return $cachePath
+    }
+
+    $text = & $Generator
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $null
+    }
+
+    New-Item -ItemType Directory -Force -Path $script:InitCacheRoot | Out-Null
+    # Write via a staging file so concurrent sessions never read a partial cache.
+    $staging = "$cachePath.$([guid]::NewGuid().ToString('N')).tmp"
+    Set-Content -LiteralPath $staging -Value $text
+    Move-Item -LiteralPath $staging -Destination $cachePath -Force
+    Get-ChildItem -LiteralPath $script:InitCacheRoot -Filter "$Name.*.ps1" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -ne $cachePath } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+    return $cachePath
 }
 
-if ($script:IsInteractive -and (Get-Command jj -ErrorAction SilentlyContinue)) {
-    Invoke-Expression (& { (jj util completion power-shell | Out-String) })
+$zoxideCommand = Get-Command zoxide -ErrorAction SilentlyContinue
+if ($script:IsInteractive -and $zoxideCommand) {
+    $zoxideInit = Get-ShellInitCachePath -Name 'zoxide' -ToolPath $zoxideCommand.Source -Generator { zoxide init powershell | Out-String }
+    if ($zoxideInit) { . $zoxideInit }
+}
+Trace-ProfileMark 'zoxide'
+
+# jj's generated completion script is ~0.5 MB and compiling it in a cold
+# process costs >100 ms, so it is NOT dot-sourced at startup. A bootstrap
+# completer loads the cached script on the first jj Tab completion; that load
+# re-registers the real completer, and the bootstrap re-runs the completion so
+# even the first press returns real results.
+$jjCommand = Get-Command jj -ErrorAction SilentlyContinue
+if ($script:IsInteractive -and $jjCommand) {
+    $jjInit = Get-ShellInitCachePath -Name 'jj' -ToolPath $jjCommand.Source -Generator { jj util completion power-shell | Out-String }
+    if ($jjInit) {
+        $script:JjInitPath = $jjInit
+        $script:JjBootstrapActive = $false
+        Register-ArgumentCompleter -Native -CommandName jj, jj.exe -ScriptBlock {
+            param($wordToComplete, $commandAst, $cursorPosition)
+            if ($script:JjBootstrapActive) { return }
+            $script:JjBootstrapActive = $true
+            try {
+                . $script:JjInitPath
+            }
+            finally {
+                $script:JjBootstrapActive = $false
+            }
+            # Re-run the completion that triggered the bootstrap. The command
+            # extent drops a trailing space, so restore it when the original
+            # cursor sat beyond the extent; otherwise this would complete the
+            # command name itself instead of its arguments.
+            $inputText = $commandAst.Extent.Text
+            $cursor = [Math]::Min($cursorPosition, $inputText.Length)
+            if ($cursorPosition -gt $inputText.Length) {
+                $inputText = $inputText + ' '
+                $cursor = $inputText.Length
+            }
+            (TabExpansion2 -InputScript $inputText -CursorColumn $cursor).CompletionMatches
+        }
+    }
+}
+Trace-ProfileMark 'jj'
+
+if ($script:TraceEnabled) {
+    $script:TraceSw.Stop()
+    Add-Content -LiteralPath $env:PROFILE_TRACE -Value (
+        $script:TraceMarks | Format-Table -AutoSize | Out-String)
 }
