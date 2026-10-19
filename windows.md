@@ -63,18 +63,20 @@ fzf, rg, bat, fd, zoxide, lsd, just, uv, zellij
 不要导入 `posh-git`。`pwsh/profile.ps1` 使用 `-ErrorAction Stop` 导入 GitPredictor；
 如果必需模块缺失，会明确失败。
 
-## 4. 从 GitHub Release 安装 GitPredictor
+## 4. 从 PowerShell Gallery 安装 GitPredictor
 
-安装 `packages/gitpredictor.json` 锁定的公开 GitHub Release。安装脚本会匿名下载
-zip、验证 SHA-256、模块版本及 MIT License，再安装到版本化的用户模块目录；不需要
-GitHub 凭据、GitPredictor checkout 或本地 .NET 构建环境。
+安装 `packages/gitpredictor.json` 声明的 `GitPredictor` 模块在 PowerShell
+Gallery（PSGallery）上的最新正式版。清单不固定版本号；安装脚本会匿名查询
+Gallery 的公开 OData feed 解析最新正式版本，下载对应的 nupkg 后验证模块清单
+版本与必需文件，再安装到版本化的用户模块目录；不需要 Gallery 账号、API key、
+GitPredictor checkout 或本地 .NET 构建环境。
 
 ```powershell
 pwsh -NoLogo -NoProfile -File .\packages\Install-GitPredictor.ps1
 ```
 
-模块目录必须包含 `GitPredictor.psd1`、`GitPredictor.dll`、`GitPrompt.psm1`、
-`Register-GitTabCompletion.ps1` 和 `LICENSE`。
+模块目录必须包含 `GitPredictor.psd1`、`GitPredictor.dll`、`GitPrompt.psm1` 和
+`Register-GitTabCompletion.ps1`，并由模块导出 `Get-GitSimplePrompt`。
 
 ## 5. Visual Studio DevShell
 
@@ -169,22 +171,24 @@ git commit -<Tab>
 只在需要配置机器专用值时，复制 `pwsh/local.example.ps1` 为 `pwsh/local.ps1`。
 该文件已被 Git 忽略。
 
-## Auth Token 和环境变量
+## API Token 和环境变量
 
-需要为 CLI 工具、agent 或容器提供认证信息时，复制：
+API token 由用户自行配置为环境变量。仓库不保存 token，profile 也不再读取 token
+配置文件或向会话注入认证变量；CLI 工具、agent 和容器直接读取用户环境中已有的变量。
 
-```powershell
-Copy-Item .\pwsh\secrets.example.ps1 .\pwsh\secrets.local.ps1
-```
-
-将实际的环境变量写入 `pwsh/secrets.local.ps1`。profile 每次启动时会自动加载该
-文件，例如：
+需要认证信息时，在仓库之外设置用户级环境变量，然后重新启动终端：
 
 ```powershell
-$env:DEEPSEEK_API_KEY = 'your-token'
-$env:ANTHROPIC_AUTH_TOKEN = $env:DEEPSEEK_API_KEY
+[Environment]::SetEnvironmentVariable('DEEPSEEK_API_KEY', '<your-token>', 'User')
 ```
 
-`pwsh/secrets.local.ps1` 已被 Git 忽略，绝不能提交。对于重要 token，优先使用
-Windows 用户环境变量、Windows Credential Manager 或 PowerShell SecretManagement；
-本地 secrets 文件是明文存储，只适合风险可接受的个人机器。
+Linux 上写入 shell 登录配置：
+
+```bash
+printf '\nexport DEEPSEEK_API_KEY="%s"\n' '<your-token>' >> ~/.profile
+```
+
+需要其他变量名时（例如 `ANTHROPIC_AUTH_TOKEN`），同样由用户在系统环境变量或
+shell 登录配置中自行设置。token 应保存在环境变量或凭据管理器（Windows
+Credential Manager、PowerShell SecretManagement）中，不要写入仓库、
+`pwsh/local.ps1` 或 PowerShell profile。

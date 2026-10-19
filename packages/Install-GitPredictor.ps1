@@ -7,18 +7,46 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $package = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
-$version = [string]$package.release.version
-$downloadUri = [uri]$package.release.downloadUrl
-$expectedHash = [string]$package.release.sha256
+$name = [string]$package.name
+if ($name -notmatch '^[A-Za-z0-9_.-]+$') {
+    throw "Invalid GitPredictor module name: $name"
+}
+$gallery = [string]$package.gallery
+if ($gallery -ne 'PSGallery') {
+    throw "Unsupported gallery in manifest: $gallery"
+}
 
+# Resolve the latest stable version from the public PowerShell Gallery OData
+# feed. No version is pinned in the manifest; the current latest stable
+# Gallery version is the default install target.
+$feedUri = "https://www.powershellgallery.com/api/v2/FindPackagesById()?id='$name'"
+$entries = @(Invoke-RestMethod -Uri $feedUri -Headers @{ 'User-Agent' = 'GitPredictor-installer' })
+if (-not $entries) {
+    throw "PowerShell Gallery has no package named $name."
+}
+
+$stable = @($entries | Where-Object { [string]$_.properties.IsPrerelease -ne 'true' })
+$packageEntry = @($stable | Where-Object { [string]$_.properties.IsLatestVersion -eq 'true' }) |
+    Select-Object -First 1
+if (-not $packageEntry -and $stable) {
+    $packageEntry = $stable |
+        Sort-Object { [version][string]$_.properties.NormalizedVersion } -Descending |
+        Select-Object -First 1
+}
+if (-not $packageEntry) {
+    throw "PowerShell Gallery has no stable release of $name."
+}
+
+$version = [string]$packageEntry.properties.NormalizedVersion
+if (-not $version) { $version = [string]$packageEntry.properties.Version }
 if ($version -notmatch '^\d+\.\d+\.\d+$') {
-    throw "Invalid GitPredictor release version: $version"
+    throw "GitPredictor latest Gallery version has an unexpected format: $version"
 }
-if ($downloadUri.Scheme -ne 'https' -or $downloadUri.Host -ne 'github.com') {
-    throw "GitPredictor release must be downloaded from https://github.com: $downloadUri"
-}
-if ($expectedHash -notmatch '^[A-Fa-f0-9]{64}$') {
-    throw 'GitPredictor release SHA-256 is missing or invalid.'
+
+# The package payload is served by the Gallery itself over HTTPS.
+$downloadUri = [uri][string]$packageEntry.content.src
+if ($downloadUri.Scheme -ne 'https' -or $downloadUri.Host -ne 'www.powershellgallery.com') {
+    throw "GitPredictor package must be downloaded from https://www.powershellgallery.com: $downloadUri"
 }
 
 if (-not $InstallRoot) {
@@ -30,39 +58,42 @@ $transactionId = [guid]::NewGuid().ToString('N')
 $staging = Join-Path $InstallRoot ".install-$transactionId"
 $backup = Join-Path $InstallRoot ".backup-$transactionId"
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) "gitpredictor-$transactionId"
-$archive = Join-Path $tempRoot ([string]$package.release.asset)
+$archive = Join-Path $tempRoot "$name-$version.zip"
 $expanded = Join-Path $tempRoot 'expanded'
 
 try {
     New-Item -ItemType Directory -Force -Path $tempRoot, $expanded, $InstallRoot | Out-Null
+
+    # The Gallery distributes PowerShell modules as NuGet packages (.nupkg),
+    # which are plain zip archives.
     Invoke-WebRequest -Uri $downloadUri -OutFile $archive
-
-    $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
-    if ($actualHash -ne $expectedHash) {
-        throw "GitPredictor release checksum mismatch. Expected $expectedHash, got $actualHash."
-    }
-
     Expand-Archive -LiteralPath $archive -DestinationPath $expanded
-    $moduleSource = Join-Path $expanded 'GitPredictor'
+
+    # Module files sit at the package root; NuGet packaging metadata is not
+    # part of the module.
+    $moduleSource = $expanded
     $requiredFiles = @(
         'GitPredictor.psd1',
         'GitPredictor.dll',
         'GitPrompt.psm1',
-        'Register-GitTabCompletion.ps1',
-        'LICENSE'
+        'Register-GitTabCompletion.ps1'
     )
     foreach ($file in $requiredFiles) {
         if (-not (Test-Path -LiteralPath (Join-Path $moduleSource $file) -PathType Leaf)) {
-            throw "GitPredictor release is incomplete: missing $file"
+            throw "GitPredictor package is incomplete: missing $file"
         }
     }
 
     $module = Test-ModuleManifest -Path (Join-Path $moduleSource 'GitPredictor.psd1')
     if ($module.Version.ToString() -ne $version) {
-        throw "GitPredictor module version $($module.Version) does not match release $version."
+        throw "GitPredictor module version $($module.Version) does not match Gallery version $version."
     }
 
-    Copy-Item -LiteralPath $moduleSource -Destination $staging -Recurse
+    New-Item -ItemType Directory -Force -Path $staging | Out-Null
+    Get-ChildItem -LiteralPath $moduleSource -Force |
+        Where-Object { $_.Name -notin @('_rels', 'package', '[Content_Types].xml') } |
+        Copy-Item -Destination $staging -Recurse
+
     if (Test-Path -LiteralPath $destination) {
         Move-Item -LiteralPath $destination -Destination $backup
     }
@@ -75,11 +106,18 @@ try {
         }
         throw
     }
-    if (Test-Path -LiteralPath $backup) {
-        Remove-Item -LiteralPath $backup -Recurse -Force
-    }
+    Write-Output "Installed GitPredictor $version (latest PowerShell Gallery release) to $destination"
 
-    Write-Output "Installed GitPredictor $version to $destination"
+    # Best effort: the replaced version's GitPredictor.dll can stay locked by
+    # already running PowerShell sessions, which must not fail the install.
+    if (Test-Path -LiteralPath $backup) {
+        try {
+            Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Could not remove the replaced version at $backup ($($_.Exception.Message)). Remove it manually after closing sessions that loaded GitPredictor."
+        }
+    }
 }
 finally {
     if (Test-Path -LiteralPath $staging) {

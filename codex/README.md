@@ -33,14 +33,12 @@ foreach ($name in @('deepseek.config.toml', 'models.json')) {
 }
 ```
 
-API key 建议设置为用户级环境变量：
+API key 由用户自行配置为环境变量。仓库和 profile 都不保存、不注入 token，Codex
+只从环境中读取 `DEEPSEEK_API_KEY`。设置为用户级环境变量后重新启动终端：
 
 ```powershell
 [Environment]::SetEnvironmentVariable('DEEPSEEK_API_KEY', '<your-token>', 'User')
 ```
-
-也可以复用仓库的 `pwsh/secrets.local.ps1`（该文件已被 Git 忽略，只适合风险
-可接受的个人机器）。
 
 ### Linux
 

@@ -13,14 +13,6 @@ if (Test-Path -LiteralPath $localSettingsPath) {
     . $localSettingsPath
 }
 
-# Authentication values are kept separately from ordinary machine settings.
-# This file is ignored by Git and is loaded in every session so CLI tools and
-# agent/container commands can read the same environment variables.
-$secretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
-if (Test-Path -LiteralPath $secretsPath) {
-    . $secretsPath
-}
-
 if ($script:IsInteractive -and $env:ZELLIJ_SESSION_NAME) {
     $zellijThemePath = Join-Path $PSScriptRoot 'zellij-solarized-console.ps1'
     if (Test-Path -LiteralPath $zellijThemePath) {
@@ -41,16 +33,24 @@ function Resolve-GitPredictorManifest {
     $package = Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json
     $installer = Join-Path $script:DevConfigRoot ([string]$package.installScript)
     $installRoot = [Environment]::ExpandEnvironmentVariables([string]$package.installRoot)
-    $manifest = Join-Path $installRoot "$($package.release.version)\GitPredictor.psd1"
 
-    if (Test-Path -LiteralPath $manifest -PathType Leaf) {
-        return (Resolve-Path -LiteralPath $manifest).ProviderPath
+    # No version is pinned in the manifest; load the highest installed version.
+    $versionedDir = @(Get-ChildItem -LiteralPath $installRoot -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' } |
+            Sort-Object { [version]$_.Name } -Descending |
+            Select-Object -First 1)
+
+    if ($versionedDir) {
+        $manifest = Join-Path $versionedDir.FullName 'GitPredictor.psd1'
+        if (Test-Path -LiteralPath $manifest -PathType Leaf) {
+            return (Resolve-Path -LiteralPath $manifest).ProviderPath
+        }
     }
 
     throw @"
-GitPredictor $($package.release.version) is required by this profile but was not found at:
-$manifest
-Install the verified GitHub Release by running: pwsh -File "$installer"
+GitPredictor is required by this profile but no Gallery version is installed under:
+$installRoot
+Install the latest PowerShell Gallery release by running: pwsh -File "$installer"
 The profile intentionally does not load posh-git as a fallback.
 "@
 }
@@ -314,4 +314,8 @@ Set-Alias -Name 'h' -Value Get-Full-History
 
 if ($script:IsInteractive -and (Get-Command zoxide -ErrorAction SilentlyContinue)) {
     Invoke-Expression (& { (zoxide init powershell | Out-String) })
+}
+
+if ($script:IsInteractive -and (Get-Command jj -ErrorAction SilentlyContinue)) {
+    Invoke-Expression (& { (jj util completion power-shell | Out-String) })
 }
